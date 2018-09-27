@@ -47,6 +47,7 @@
 #include "mpegvideo.h"
 #include "rectangle.h"
 #include "thread.h"
+#include "runtime_measure.h"
 
 static const uint8_t field_scan[16+1] = {
     0 + 0 * 4, 0 + 1 * 4, 1 + 0 * 4, 0 + 2 * 4,
@@ -2522,6 +2523,7 @@ static void er_add_slice(H264SliceContext *sl,
 
 static int decode_slice(struct AVCodecContext *avctx, void *arg)
 {
+    uint32_t mb_count = 0;
     H264SliceContext *sl = arg;
     const H264Context *h = sl->h264;
     int lf_x_start = sl->mb_x;
@@ -2640,6 +2642,11 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             }
         }
     } else {
+        if( rm_global_vars[VAR_decode_mb_count] == 0 ) { rm_global_vars[VAR_decode_mb_count] = 1; }
+        printf("prevmbs dec: %f ns, num: %u\n", rm_global_vars[VAR_decode_mb_cavlc_sum] / (double)rm_global_vars[VAR_decode_mb_count], rm_global_vars[VAR_decode_mb_count]);
+        rm_global_vars[VAR_decode_mb_cavlc_sum] = 0;
+        rm_global_vars[VAR_decode_mb_count] = 0;
+
         for (;;) {
             int ret;
 
