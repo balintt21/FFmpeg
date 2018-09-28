@@ -2557,6 +2557,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
     }
 
     if (h->ps.pps->cabac) {
+        printf("[WARNING]:%s:%d: CABAC decoding branch is not optimized for fetching motion vectors fast!", __FILE__, __LINE__);
         /* realign */
         align_get_bits(&sl->gb);
 
