@@ -36,7 +36,6 @@
 #include "golomb.h"
 #include "mpegutils.h"
 #include "libavutil/avassert.h"
-#include "runtime_measure.h"
 
 
 static const uint8_t golomb_to_inter_cbp_gray[16]={
@@ -702,8 +701,6 @@ int decode_luma_residual(const H264Context *h, H264SliceContext *sl,
 
 int ff_h264_decode_mb_cavlc(const H264Context *h, H264SliceContext *sl)
 {
-    int64_t measure_timepoint_ns = rm_get_monotonic_time_ns();
-
     int mb_xy;
     int partition_count;
     unsigned int mb_type, cbp;
@@ -726,8 +723,6 @@ int ff_h264_decode_mb_cavlc(const H264Context *h, H264SliceContext *sl)
                     sl->mb_mbaff = sl->mb_field_decoding_flag = get_bits1(&sl->gb);
             }
             decode_mb_skip(h, sl);
-            rm_global_vars[VAR_decode_mb_cavlc_sum] += rm_get_monotonic_time_ns() - measure_timepoint_ns;
-            ++rm_global_vars[VAR_decode_mb_count];
             return 0;
         }
     }
@@ -1180,8 +1175,5 @@ decode_intra_mb:
     }
     h->cur_pic.qscale_table[mb_xy] = sl->qscale;
     write_back_non_zero_count(h, sl);
-
-    rm_global_vars[VAR_decode_mb_cavlc_sum] += rm_get_monotonic_time_ns() - measure_timepoint_ns;
-    ++rm_global_vars[VAR_decode_mb_count];
     return 0;
 }

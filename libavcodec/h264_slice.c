@@ -2523,7 +2523,6 @@ static void er_add_slice(H264SliceContext *sl,
 
 static int decode_slice(struct AVCodecContext *avctx, void *arg)
 {
-    uint32_t mb_count = 0;
     H264SliceContext *sl = arg;
     const H264Context *h = sl->h264;
     int lf_x_start = sl->mb_x;
@@ -2642,11 +2641,6 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             }
         }
     } else {
-        if( rm_global_vars[VAR_decode_mb_count] == 0 ) { rm_global_vars[VAR_decode_mb_count] = 1; }
-        printf("prevmbs dec: %f ns, num: %u\n", rm_global_vars[VAR_decode_mb_cavlc_sum] / (double)rm_global_vars[VAR_decode_mb_count], rm_global_vars[VAR_decode_mb_count]);
-        rm_global_vars[VAR_decode_mb_cavlc_sum] = 0;
-        rm_global_vars[VAR_decode_mb_count] = 0;
-
         for (;;) {
             int ret;
 
@@ -2660,16 +2654,16 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
             ret = ff_h264_decode_mb_cavlc(h, sl);
 
-            if (ret >= 0)
-                ff_h264_hl_decode_mb(h, sl);
+            //if (ret >= 0)
+                //ff_h264_hl_decode_mb(h, sl);
 
             // FIXME optimal? or let mb_decode decode 16x32 ?
             if (ret >= 0 && FRAME_MBAFF(h)) {
                 sl->mb_y++;
-                ret = ff_h264_decode_mb_cavlc(h, sl);
+                //ret = ff_h264_decode_mb_cavlc(h, sl);
 
-                if (ret >= 0)
-                    ff_h264_hl_decode_mb(h, sl);
+                //if (ret >= 0)
+                    //ff_h264_hl_decode_mb(h, sl);
                 sl->mb_y--;
             }
 
@@ -2682,7 +2676,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             }
 
             if (++sl->mb_x >= h->mb_width) {
-                loop_filter(h, sl, lf_x_start, sl->mb_x);
+                //loop_filter(h, sl, lf_x_start, sl->mb_x);
                 sl->mb_x = lf_x_start = 0;
                 decode_finish_row(h, sl);
                 ++sl->mb_y;
@@ -2761,7 +2755,6 @@ int ff_h264_execute_decode_slices(H264Context *h)
     av_assert0(context_count && h->slice_ctx[context_count - 1].mb_y < h->mb_height);
 
     if (context_count == 1) {
-
         h->slice_ctx[0].next_slice_idx = h->mb_width * h->mb_height;
         h->postpone_filter = 0;
 
