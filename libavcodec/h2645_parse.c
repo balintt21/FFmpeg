@@ -27,6 +27,7 @@
 #include "libavutil/mem.h"
 
 #include "hevc.h"
+#include "h264.h"
 #include "h2645_parse.h"
 
 int ff_h2645_extract_rbsp(const uint8_t *src, int length,
@@ -363,6 +364,9 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
 
         buf    += consumed;
         length -= consumed;
+
+        if( (nal->type == H264_NAL_SLICE) || (nal->type == H264_NAL_IDR_SLICE) )
+        { break; } //break at relevan nal types, do not search for the next start byte!!!
     }
 
     return 0;
