@@ -1119,6 +1119,8 @@ decode_intra_mb:
         sl->chroma_qp[0] = get_chroma_qp(h->ps.pps, 0, sl->qscale);
         sl->chroma_qp[1] = get_chroma_qp(h->ps.pps, 1, sl->qscale);
 
+        //try to skip luma and chroma decode !!! TODO
+
         if(IS_INTERLACED(mb_type)){
             scan8x8 = sl->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
             scan    = sl->qscale ? h->field_scan : h->field_scan_q0;
@@ -1164,12 +1166,12 @@ decode_intra_mb:
                     }
                 }
             }else{
-                fill_rectangle(&sl->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
+                fill_rectangle(&sl->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);//required
                 fill_rectangle(&sl->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
             }
         }
     }else{
-        fill_rectangle(&sl->non_zero_count_cache[scan8[ 0]], 4, 4, 8, 0, 1);
+        fill_rectangle(&sl->non_zero_count_cache[scan8[ 0]], 4, 4, 8, 0, 1);//required
         fill_rectangle(&sl->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
         fill_rectangle(&sl->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
     }

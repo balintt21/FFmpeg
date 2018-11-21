@@ -2557,90 +2557,9 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
     }
 
     if (h->ps.pps->cabac) {
+        //balint.telkes: CABAC is too complicated for us
         printf("[WARNING]:%s:%d: CABAC decoding branch is not optimized for fetching motion vectors fast!\n", __FILE__, __LINE__);
-        /* realign */
-        align_get_bits(&sl->gb);
-
-        /* init cabac */
-        ret = ff_init_cabac_decoder(&sl->cabac,
-                              sl->gb.buffer + get_bits_count(&sl->gb) / 8,
-                              (get_bits_left(&sl->gb) + 7) / 8);
-        if (ret < 0)
-            return ret;
-
-        ff_h264_init_cabac_states(h, sl);
-
-        for (;;) {
-            // START_TIMER
-            int ret, eos;
-            if (sl->mb_x + sl->mb_y * h->mb_width >= sl->next_slice_idx) {
-                av_log(h->avctx, AV_LOG_ERROR, "Slice overlaps with next at %d\n",
-                       sl->next_slice_idx);
-                er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
-                             sl->mb_y, ER_MB_ERROR);
-                return AVERROR_INVALIDDATA;
-            }
-
-            ret = ff_h264_decode_mb_cabac(h, sl);
-            // STOP_TIMER("decode_mb_cabac")
-
-            if (ret >= 0)
-                ff_h264_hl_decode_mb(h, sl);
-
-            // FIXME optimal? or let mb_decode decode 16x32 ?
-            if (ret >= 0 && FRAME_MBAFF(h)) {
-                sl->mb_y++;
-
-                ret = ff_h264_decode_mb_cabac(h, sl);
-
-                if (ret >= 0)
-                    ff_h264_hl_decode_mb(h, sl);
-                sl->mb_y--;
-            }
-            eos = get_cabac_terminate(&sl->cabac);
-
-            if ((h->workaround_bugs & FF_BUG_TRUNCATED) &&
-                sl->cabac.bytestream > sl->cabac.bytestream_end + 2) {
-                er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x - 1,
-                             sl->mb_y, ER_MB_END);
-                if (sl->mb_x >= lf_x_start)
-                    loop_filter(h, sl, lf_x_start, sl->mb_x + 1);
-                goto finish;
-            }
-            if (sl->cabac.bytestream > sl->cabac.bytestream_end + 2 )
-                av_log(h->avctx, AV_LOG_DEBUG, "bytestream overread %"PTRDIFF_SPECIFIER"\n", sl->cabac.bytestream_end - sl->cabac.bytestream);
-            if (ret < 0 || sl->cabac.bytestream > sl->cabac.bytestream_end + 4) {
-                av_log(h->avctx, AV_LOG_ERROR,
-                       "error while decoding MB %d %d, bytestream %"PTRDIFF_SPECIFIER"\n",
-                       sl->mb_x, sl->mb_y,
-                       sl->cabac.bytestream_end - sl->cabac.bytestream);
-                er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x,
-                             sl->mb_y, ER_MB_ERROR);
-                return AVERROR_INVALIDDATA;
-            }
-
-            if (++sl->mb_x >= h->mb_width) {
-                loop_filter(h, sl, lf_x_start, sl->mb_x);
-                sl->mb_x = lf_x_start = 0;
-                decode_finish_row(h, sl);
-                ++sl->mb_y;
-                if (FIELD_OR_MBAFF_PICTURE(h)) {
-                    ++sl->mb_y;
-                    if (FRAME_MBAFF(h) && sl->mb_y < h->mb_height)
-                        predict_field_decoding_flag(h, sl);
-                }
-            }
-
-            if (eos || sl->mb_y >= h->mb_height) {
-                ff_tlog(h->avctx, "slice end %d %d\n",
-                        get_bits_count(&sl->gb), sl->gb.size_in_bits);
-                er_add_slice(sl, sl->resync_mb_x, sl->resync_mb_y, sl->mb_x - 1,
-                             sl->mb_y, ER_MB_END);
-                if (sl->mb_x > lf_x_start)
-                    loop_filter(h, sl, lf_x_start, sl->mb_x);
-                goto finish;
-            }
-        }
+        return AVERROR_INVALIDDATA;
     } else {
         for (;;) {
             int ret;
@@ -2656,10 +2575,10 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             ret = ff_h264_decode_mb_cavlc(h, sl);
 
             //if (ret >= 0)
-                //ff_h264_hl_decode_mb(h, sl);
+                //ff_h264_hl_decode_mb(h, sl); balint.telkes: not necessary and very expensive
 
             // FIXME optimal? or let mb_decode decode 16x32 ?
-            if (ret >= 0 && FRAME_MBAFF(h)) {
+            if (ret >= 0 && FRAME_MBAFF(h)) { // balint.telkes: it should not happen
                 //sl->mb_y++;
                 //ret = ff_h264_decode_mb_cavlc(h, sl);
 
@@ -2678,9 +2597,9 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
             }
 
             if (++sl->mb_x >= h->mb_width) {
-                //loop_filter(h, sl, lf_x_start, sl->mb_x);
+                //loop_filter(h, sl, lf_x_start, sl->mb_x); balint.telkes: not necessary and very expensive
                 sl->mb_x = lf_x_start = 0;
-                //decode_finish_row(h, sl);
+                //decode_finish_row(h, sl); balint.telkes: not necessary and expensive
                 ++sl->mb_y;
                 if (FIELD_OR_MBAFF_PICTURE(h)) {
                     ++sl->mb_y;

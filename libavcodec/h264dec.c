@@ -54,7 +54,6 @@
 #include "rectangle.h"
 #include "thread.h"
 #include "vdpau_compat.h"
-#include "runtime_measure.h"
 
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 
@@ -974,7 +973,6 @@ static int send_next_delayed_frame(H264Context *h, AVFrame *dst_frame,
 static int h264_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
-    rm_init();
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     H264Context *h     = avctx->priv_data;
