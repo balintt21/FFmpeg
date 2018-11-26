@@ -37,6 +37,20 @@
 #include "version.h"
 
 
+typedef void* (*allocator_fn_t)(size_t size);
+typedef void (*deallocator_fn_t)(void *opaque, uint8_t *data);
+/**
+ * Registers an external allocator function for allocating side data buffers
+ * @param allocator pointer to a function with the following footprint 'void* (size_t size)'
+ */
+void av_frame_register_ExternalSideDataAllocator(allocator_fn_t allocator);
+/**
+ * (Optional) otherwise an empty function is used( leaking data internally )
+ * Registers an external deallocator function which is used by av_unref_frame
+ * @param deallocator pointer to a function with the following foorprint void (void *opaque, uint8_t *data)
+ */
+void av_frame_register_ExternalSideDataDeallocator(deallocator_fn_t deallocator);
+
 /**
  * @defgroup lavu_frame AVFrame
  * @ingroup lavu_data

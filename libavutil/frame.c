@@ -27,6 +27,25 @@
 #include "samplefmt.h"
 
 
+static void av_frame_empty_deallocator(void *opaque, uint8_t *data)
+{
+    /* Does nothing on purpose !!! */
+}
+
+allocator_fn_t externalSideDataAllocator = NULL;
+deallocator_fn_t externalSideDataDeallocator = av_frame_empty_deallocator;
+
+
+void __attribute__((used)) av_frame_register_ExternalSideDataAllocator(allocator_fn_t allocator)
+{
+    externalSideDataAllocator = allocator;
+}
+
+void __attribute__((used)) av_frame_register_ExternalSideDataDeallocator(deallocator_fn_t deallocator)
+{
+    externalSideDataDeallocator = deallocator;
+}
+
 static AVFrameSideData *frame_new_side_data(AVFrame *frame,
                                             enum AVFrameSideDataType type,
                                             AVBufferRef *buf);
@@ -341,12 +360,14 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+	
     for (i = 0; i < src->nb_side_data; i++) {
         const AVFrameSideData *sd_src = src->side_data[i];
         AVFrameSideData *sd_dst;
         if (   sd_src->type == AV_FRAME_DATA_PANSCAN
             && (src->width != dst->width || src->height != dst->height))
             continue;
+        /*
         if (force_copy) {
             sd_dst = av_frame_new_side_data(dst, sd_src->type,
                                             sd_src->size);
@@ -361,7 +382,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 wipe_side_data(dst);
                 return AVERROR(ENOMEM);
             }
-        }
+        }*/
         av_dict_copy(&sd_dst->metadata, sd_src->metadata, 0);
     }
 
@@ -675,8 +696,20 @@ AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
                                         enum AVFrameSideDataType type,
                                         int size)
 {
-
-    return frame_new_side_data(frame, type, av_buffer_alloc(size));
+    AVBufferRef* buf = NULL;
+    if( externalSideDataAllocator != NULL )
+    {
+        uint8_t    *data = externalSideDataAllocator(size);
+        if( data != NULL )
+        {
+            buf = av_buffer_create(data, size, externalSideDataDeallocator, NULL, 0);
+            if (!buf)
+                av_freep(&data);
+        }
+    } else {
+        buf = av_buffer_alloc(size);
+    }
+    return frame_new_side_data(frame, type, buf);
 }
 
 AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
