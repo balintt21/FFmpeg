@@ -73,6 +73,13 @@
 #define USER_START_CODE         0x000001b2
 
 /**
+ * ff_print_debug_info2 used to allocate general buffer for every motion vector export
+ * but now it allocates once and there is no way to deallocate it within this context so
+ * it must be done explicitly
+ */
+void mpegvideo_freeAVMotionVectorBuffer(void);
+
+/**
  * MpegEncContext.
  */
 typedef struct MpegEncContext {

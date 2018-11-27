@@ -50,6 +50,17 @@
 #include "wmv2.h"
 #include <limits.h>
 
+static AVMotionVector* general_mvs_buffer = NULL;
+
+void mpegvideo_freeAVMotionVectorBuffer(void)
+{
+    if(!general_mvs_buffer)
+    {
+        av_freep(general_mvs_buffer);
+        general_mvs_buffer = NULL;
+    }
+}
+
 static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
                                    int16_t *block, int n, int qscale)
 {
@@ -1587,9 +1598,14 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
 
         /* size is width * height * 2 * 4 where 2 is for directions and 4 is
          * for the maximum number of MB (4 MB in case of IS_8x8) */
-        AVMotionVector *mvs = av_malloc_array(mb_width * mb_height, 2 * 4 * sizeof(AVMotionVector));
-        if (!mvs)
-            return;
+        if (!general_mvs_buffer)
+        {
+            //Allocating Motion
+            general_mvs_buffer = av_malloc_array(mb_width * mb_height, 2 * 4 * sizeof(AVMotionVector));
+            if(!general_mvs_buffer) 
+            { return; }
+        }
+        AVMotionVector *mvs = general_mvs_buffer;
 
         for (mb_y = 0; mb_y < mb_height; mb_y++) {
             for (mb_x = 0; mb_x < mb_width; mb_x++) {
@@ -1647,8 +1663,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
 
         if (mbcount) {
             AVFrameSideData *sd;
-
-            av_log(avctx, AV_LOG_DEBUG, "Adding %d MVs info to frame %d\n", mbcount, avctx->frame_number);
+            //av_log(avctx, AV_LOG_DEBUG, "Adding %d MVs info to frame %d\n", mbcount, avctx->frame_number);
             sd = av_frame_new_side_data(pict, AV_FRAME_DATA_MOTION_VECTORS, mbcount * sizeof(AVMotionVector));
             if (!sd) {
                 av_freep(&mvs);
@@ -1656,8 +1671,6 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
             }
             memcpy(sd->data, mvs, mbcount * sizeof(AVMotionVector));
         }
-
-        av_freep(&mvs);
     }
 
     /* TODO: export all the following to make them accessible for users (and filters) */

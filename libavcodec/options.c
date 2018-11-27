@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "mpegvideo.h"
 #include "internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/internal.h"
@@ -185,6 +186,9 @@ void avcodec_free_context(AVCodecContext **pavctx)
     av_freep(&avctx->rc_override);
 
     av_freep(pavctx);
+
+    //free general motion vector buffer
+    mpegvideo_freeAVMotionVectorBuffer();
 }
 
 #if FF_API_COPY_CONTEXT
