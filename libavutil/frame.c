@@ -431,18 +431,20 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
     if (ret < 0)
         return ret;
 
-    /* duplicate the frame data if it's not refcounted */
-    if (!src->buf[0]) {
-        ret = av_frame_get_buffer(dst, 32);
-        if (ret < 0)
-            return ret;
+    /* New comment: for motion_vector_extract never every try to copy the frame which is not used
+     * Original comment: //duplicate the frame data if it's not refcounted *
+                            if (!src->buf[0]) {
+                                ret = av_frame_get_buffer(dst, 32);
+                                if (ret < 0)
+                                    return ret;
 
-        ret = av_frame_copy(dst, src);
-        if (ret < 0)
-            av_frame_unref(dst);
+                                ret = av_frame_copy(dst, src);
+                                if (ret < 0)
+                                    av_frame_unref(dst);
 
-        return ret;
-    }
+                                return ret;
+                            }
+    */
 
     /* ref the buffers */
     for (i = 0; i < FF_ARRAY_ELEMS(src->buf); i++) {
